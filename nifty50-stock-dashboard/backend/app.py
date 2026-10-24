@@ -85,7 +85,7 @@ def get_stock_data():
         params = {
             "function": "TIME_SERIES_DAILY",
             "symbol": symbol,
-            "outputsize": "full",
+            "outputsize": "compact",
             "apikey": API_KEY
         }
 
@@ -99,11 +99,14 @@ def get_stock_data():
         if "Note" in result:
             return jsonify({"error": result["Note"], "raw": result}), 429
 
+        if "Information" in result:
+            return jsonify({"error": result["Information"], "raw": result}), 400
+
         series = result.get("Time Series (Daily)")
         if not series:
             return jsonify({"error": "No daily time series found", "raw": result}), 404
 
-        dates = sorted(series.keys())[-365:]
+        dates = sorted(series.keys())
         data = []
 
         for d in dates:
