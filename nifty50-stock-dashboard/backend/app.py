@@ -94,17 +94,18 @@ def get_stock_data():
         result = response.json()
 
         if "Error Message" in result:
-            return jsonify({"error": result["Error Message"]}), 404
+            return jsonify({"error": result["Error Message"], "raw": result}), 404
 
         if "Note" in result:
-            return jsonify({"error": result["Note"]}), 429
+            return jsonify({"error": result["Note"], "raw": result}), 429
 
         series = result.get("Time Series (Daily)")
         if not series:
-            return jsonify({"error": "No daily time series found"}), 404
+            return jsonify({"error": "No daily time series found", "raw": result}), 404
 
         dates = sorted(series.keys())[-365:]
         data = []
+
         for d in dates:
             row = series[d]
             data.append({
