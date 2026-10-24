@@ -65,10 +65,10 @@ def convert_df_to_candles(df):
     for index, row in df.iterrows():
         candles.append({
             "date": index.strftime("%Y-%m-%d"),
-            "open": float(row["Open"]),
-            "high": float(row["High"]),
-            "low": float(row["Low"]),
-            "close": float(row["Close"]),
+            "open": round(float(row["Open"]), 2),
+            "high": round(float(row["High"]), 2),
+            "low": round(float(row["Low"]), 2),
+            "close": round(float(row["Close"]), 2),
             "volume": int(row["Volume"]) if pd.notna(row["Volume"]) else 0
         })
     return candles
@@ -94,17 +94,27 @@ def get_stock_data():
         end_date = datetime.now()
         start_date = end_date - timedelta(days=365)
 
-        ticker = yf.Ticker(symbol)
-        df = ticker.history(
+        df = yf.download(
+            symbol,
             start=start_date.strftime("%Y-%m-%d"),
             end=end_date.strftime("%Y-%m-%d"),
-            auto_adjust=False
+            interval="1d",
+            auto_adjust=False,
+            progress=False,
+            threads=False
         )
 
         if df is None or df.empty:
             return jsonify({"error": f"No data found for {symbol}"}), 404
 
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+
         needed = ["Open", "High", "Low", "Close", "Volume"]
+        missing = [col for col in needed if col not in df.columns]
+        if missing:
+            return jsonify({"error": f"Missing columns: {missing}"}), 500
+
         df = df[needed].dropna()
 
         if df.empty:
