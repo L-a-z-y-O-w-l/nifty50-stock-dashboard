@@ -1,83 +1,70 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import yfinance as yf
-import pandas as pd
-from datetime import datetime, timedelta
+import requests
 import os
 
 app = Flask(__name__)
 CORS(app)
 
-NIFTY_50 = [
-    {"name": "Adani Enterprises", "symbol": "ADANIENT.NS"},
-    {"name": "Adani Ports", "symbol": "ADANIPORTS.NS"},
-    {"name": "Apollo Hospitals", "symbol": "APOLLOHOSP.NS"},
-    {"name": "Asian Paints", "symbol": "ASIANPAINT.NS"},
-    {"name": "Axis Bank", "symbol": "AXISBANK.NS"},
-    {"name": "Bajaj Auto", "symbol": "BAJAJ-AUTO.NS"},
-    {"name": "Bajaj Finance", "symbol": "BAJFINANCE.NS"},
-    {"name": "Bajaj Finserv", "symbol": "BAJAJFINSV.NS"},
-    {"name": "BEL", "symbol": "BEL.NS"},
-    {"name": "Bharti Airtel", "symbol": "BHARTIARTL.NS"},
-    {"name": "Cipla", "symbol": "CIPLA.NS"},
-    {"name": "Coal India", "symbol": "COALINDIA.NS"},
-    {"name": "Dr Reddys", "symbol": "DRREDDY.NS"},
-    {"name": "Eicher Motors", "symbol": "EICHERMOT.NS"},
-    {"name": "Grasim", "symbol": "GRASIM.NS"},
-    {"name": "HCL Tech", "symbol": "HCLTECH.NS"},
-    {"name": "HDFC Bank", "symbol": "HDFCBANK.NS"},
-    {"name": "HDFC Life", "symbol": "HDFCLIFE.NS"},
-    {"name": "Hero MotoCorp", "symbol": "HEROMOTOCO.NS"},
-    {"name": "Hindalco", "symbol": "HINDALCO.NS"},
-    {"name": "HUL", "symbol": "HINDUNILVR.NS"},
-    {"name": "ICICI Bank", "symbol": "ICICIBANK.NS"},
-    {"name": "IndusInd Bank", "symbol": "INDUSINDBK.NS"},
-    {"name": "Infosys", "symbol": "INFY.NS"},
-    {"name": "ITC", "symbol": "ITC.NS"},
-    {"name": "Jio Financial", "symbol": "JIOFIN.NS"},
-    {"name": "JSW Steel", "symbol": "JSWSTEEL.NS"},
-    {"name": "Kotak Bank", "symbol": "KOTAKBANK.NS"},
-    {"name": "Larsen and Toubro", "symbol": "LT.NS"},
-    {"name": "M and M", "symbol": "M&M.NS"},
-    {"name": "Maruti Suzuki", "symbol": "MARUTI.NS"},
-    {"name": "Nestle India", "symbol": "NESTLEIND.NS"},
-    {"name": "NTPC", "symbol": "NTPC.NS"},
-    {"name": "ONGC", "symbol": "ONGC.NS"},
-    {"name": "Power Grid", "symbol": "POWERGRID.NS"},
-    {"name": "Reliance", "symbol": "RELIANCE.NS"},
-    {"name": "SBI Life", "symbol": "SBILIFE.NS"},
-    {"name": "Shriram Finance", "symbol": "SHRIRAMFIN.NS"},
-    {"name": "SBI", "symbol": "SBIN.NS"},
-    {"name": "Sun Pharma", "symbol": "SUNPHARMA.NS"},
-    {"name": "TCS", "symbol": "TCS.NS"},
-    {"name": "Tata Consumer", "symbol": "TATACONSUM.NS"},
-    {"name": "Tata Motors", "symbol": "TATAMOTORS.NS"},
-    {"name": "Tata Steel", "symbol": "TATASTEEL.NS"},
-    {"name": "Tech Mahindra", "symbol": "TECHM.NS"},
-    {"name": "Titan", "symbol": "TITAN.NS"},
-    {"name": "Trent", "symbol": "TRENT.NS"},
-    {"name": "UltraTech Cement", "symbol": "ULTRACEMCO.NS"},
-    {"name": "Wipro", "symbol": "WIPRO.NS"}
-]
+API_KEY = os.environ.get("ALPHAVANTAGE_API_KEY")
 
-def convert_df_to_candles(df):
-    candles = []
-    for index, row in df.iterrows():
-        candles.append({
-            "date": index.strftime("%Y-%m-%d"),
-            "open": round(float(row["Open"]), 2),
-            "high": round(float(row["High"]), 2),
-            "low": round(float(row["Low"]), 2),
-            "close": round(float(row["Close"]), 2),
-            "volume": int(row["Volume"]) if pd.notna(row["Volume"]) else 0
-        })
-    return candles
+NIFTY_50 = [
+    {"name": "Adani Enterprises", "symbol": "ADANIENT.BSE"},
+    {"name": "Adani Ports", "symbol": "ADANIPORTS.BSE"},
+    {"name": "Apollo Hospitals", "symbol": "APOLLOHOSP.BSE"},
+    {"name": "Asian Paints", "symbol": "ASIANPAINT.BSE"},
+    {"name": "Axis Bank", "symbol": "AXISBANK.BSE"},
+    {"name": "Bajaj Auto", "symbol": "BAJAJ-AUTO.BSE"},
+    {"name": "Bajaj Finance", "symbol": "BAJFINANCE.BSE"},
+    {"name": "Bajaj Finserv", "symbol": "BAJAJFINSV.BSE"},
+    {"name": "BEL", "symbol": "BEL.BSE"},
+    {"name": "Bharti Airtel", "symbol": "BHARTIARTL.BSE"},
+    {"name": "Cipla", "symbol": "CIPLA.BSE"},
+    {"name": "Coal India", "symbol": "COALINDIA.BSE"},
+    {"name": "Dr Reddys", "symbol": "DRREDDY.BSE"},
+    {"name": "Eicher Motors", "symbol": "EICHERMOT.BSE"},
+    {"name": "Grasim", "symbol": "GRASIM.BSE"},
+    {"name": "HCL Tech", "symbol": "HCLTECH.BSE"},
+    {"name": "HDFC Bank", "symbol": "HDFCBANK.BSE"},
+    {"name": "HDFC Life", "symbol": "HDFCLIFE.BSE"},
+    {"name": "Hero MotoCorp", "symbol": "HEROMOTOCO.BSE"},
+    {"name": "Hindalco", "symbol": "HINDALCO.BSE"},
+    {"name": "HUL", "symbol": "HINDUNILVR.BSE"},
+    {"name": "ICICI Bank", "symbol": "ICICIBANK.BSE"},
+    {"name": "IndusInd Bank", "symbol": "INDUSINDBK.BSE"},
+    {"name": "Infosys", "symbol": "INFY.BSE"},
+    {"name": "ITC", "symbol": "ITC.BSE"},
+    {"name": "Jio Financial", "symbol": "JIOFIN.BSE"},
+    {"name": "JSW Steel", "symbol": "JSWSTEEL.BSE"},
+    {"name": "Kotak Bank", "symbol": "KOTAKBANK.BSE"},
+    {"name": "Larsen and Toubro", "symbol": "LT.BSE"},
+    {"name": "M and M", "symbol": "M&M.BSE"},
+    {"name": "Maruti Suzuki", "symbol": "MARUTI.BSE"},
+    {"name": "Nestle India", "symbol": "NESTLEIND.BSE"},
+    {"name": "NTPC", "symbol": "NTPC.BSE"},
+    {"name": "ONGC", "symbol": "ONGC.BSE"},
+    {"name": "Power Grid", "symbol": "POWERGRID.BSE"},
+    {"name": "Reliance", "symbol": "RELIANCE.BSE"},
+    {"name": "SBI Life", "symbol": "SBILIFE.BSE"},
+    {"name": "Shriram Finance", "symbol": "SHRIRAMFIN.BSE"},
+    {"name": "SBI", "symbol": "SBIN.BSE"},
+    {"name": "Sun Pharma", "symbol": "SUNPHARMA.BSE"},
+    {"name": "TCS", "symbol": "TCS.BSE"},
+    {"name": "Tata Consumer", "symbol": "TATACONSUM.BSE"},
+    {"name": "Tata Motors", "symbol": "TATAMOTORS.BSE"},
+    {"name": "Tata Steel", "symbol": "TATASTEEL.BSE"},
+    {"name": "Tech Mahindra", "symbol": "TECHM.BSE"},
+    {"name": "Titan", "symbol": "TITAN.BSE"},
+    {"name": "Trent", "symbol": "TRENT.BSE"},
+    {"name": "UltraTech Cement", "symbol": "ULTRACEMCO.BSE"},
+    {"name": "Wipro", "symbol": "WIPRO.BSE"}
+]
 
 @app.route("/")
 def home():
     return jsonify({
         "message": "Nifty 50 stock backend is running",
-        "endpoints": ["/api/stocks", "/api/stock-data?symbol=RELIANCE.NS"]
+        "endpoints": ["/api/stocks", "/api/stock-data?symbol=RELIANCE.BSE"]
     })
 
 @app.route("/api/stocks")
@@ -90,44 +77,53 @@ def get_stock_data():
     if not symbol:
         return jsonify({"error": "symbol query parameter is required"}), 400
 
+    if not API_KEY:
+        return jsonify({"error": "ALPHAVANTAGE_API_KEY is not set on Render"}), 500
+
     try:
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=365)
+        url = "https://www.alphavantage.co/query"
+        params = {
+            "function": "TIME_SERIES_DAILY",
+            "symbol": symbol,
+            "outputsize": "full",
+            "apikey": API_KEY
+        }
 
-        df = yf.download(
-            symbol,
-            start=start_date.strftime("%Y-%m-%d"),
-            end=end_date.strftime("%Y-%m-%d"),
-            interval="1d",
-            auto_adjust=False,
-            progress=False,
-            threads=False
-        )
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        result = response.json()
 
-        if df is None or df.empty:
-            return jsonify({"error": f"No data found for {symbol}"}), 404
+        if "Error Message" in result:
+            return jsonify({"error": result["Error Message"]}), 404
 
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
+        if "Note" in result:
+            return jsonify({"error": result["Note"]}), 429
 
-        needed = ["Open", "High", "Low", "Close", "Volume"]
-        missing = [col for col in needed if col not in df.columns]
-        if missing:
-            return jsonify({"error": f"Missing columns: {missing}"}), 500
+        series = result.get("Time Series (Daily)")
+        if not series:
+            return jsonify({"error": "No daily time series found"}), 404
 
-        df = df[needed].dropna()
-
-        if df.empty:
-            return jsonify({"error": f"No usable OHLC data found for {symbol}"}), 404
-
-        candles = convert_df_to_candles(df)
+        dates = sorted(series.keys())[-365:]
+        data = []
+        for d in dates:
+            row = series[d]
+            data.append({
+                "date": d,
+                "open": float(row["1. open"]),
+                "high": float(row["2. high"]),
+                "low": float(row["3. low"]),
+                "close": float(row["4. close"]),
+                "volume": int(float(row["5. volume"]))
+            })
 
         return jsonify({
             "symbol": symbol,
-            "count": len(candles),
-            "data": candles
+            "count": len(data),
+            "data": data
         })
 
+    except requests.RequestException as e:
+        return jsonify({"error": f"Request failed: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
